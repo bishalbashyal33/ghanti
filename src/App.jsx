@@ -79,7 +79,8 @@ function App() {
 
   const playSound = useCallback((intensity) => {
     const now = performance.now();
-    if (now - lastRingTimeRef.current < 100) return;
+    // Slightly longer debounce to prevent rapid "machine gun" ringing
+    if (now - lastRingTimeRef.current < 150) return;
     lastRingTimeRef.current = now;
 
     if (!audioCtxRef.current || audioCtxRef.current.state === 'suspended') return;
@@ -89,12 +90,20 @@ function App() {
       const source = ctx.createBufferSource();
       source.buffer = audioBufferRef.current;
       const gain = ctx.createGain();
-      gain.gain.setValueAtTime(Math.min(0.3 + (intensity * 0.7), 1), ctx.currentTime);
+
+      // Much more dynamic gain range: 0.02 to 1.0
+      // Uses a square of intensity for a more natural response to soft/hard shakes
+      const volume = Math.min(0.02 + (intensity * intensity * 0.98), 1);
+
+      gain.gain.setValueAtTime(volume, ctx.currentTime);
+      // Subtle fade out to prevent clicks
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5);
+
       source.connect(gain);
       gain.connect(ctx.destination);
       source.start(0);
     } else if (reverbRef.current) {
-      // Fallback only if reverb is actually initialized
+      // Fallback
       const startTime = ctx.currentTime;
       const harmonics = [520, 780, 1040, 1300, 1664, 2132];
       const amplitudes = [1.0, 0.6, 0.4, 0.3, 0.2, 0.1];
@@ -116,9 +125,9 @@ function App() {
   // Physics Loop
   useEffect(() => {
     let frameId;
-    const gravity = 0.15; // Lowered from 0.5 for a "heavier", slower swing
-    const friction = 0.992; // Increased from 0.985 for better damping
-    const maxRotation = 60; // Prevent the bell from swinging too wildly
+    const gravity = 0.15;
+    const friction = 0.992;
+    const maxRotation = 60;
     lastTimeRef.current = performance.now();
 
     const update = () => {
@@ -129,7 +138,7 @@ function App() {
 
       const springForce = -gravity * rotationRef.current;
       velocityRef.current += springForce * dt;
-      velocityRef.current *= Math.pow(friction, dt); // Scale friction with time
+      velocityRef.current *= Math.pow(friction, dt);
 
       const oldRotation = rotationRef.current;
       rotationRef.current += velocityRef.current * dt;
@@ -137,13 +146,16 @@ function App() {
       // Clamp rotation
       if (Math.abs(rotationRef.current) > maxRotation) {
         rotationRef.current = Math.sign(rotationRef.current) * maxRotation;
-        velocityRef.current *= -0.5; // Slight bounce back
+        velocityRef.current *= -0.5;
       }
 
-      // Sound Trigger (only if moving fast enough)
+      // Sound Trigger (Center cross)
       if ((rotationRef.current > 0 && oldRotation <= 0) || (rotationRef.current < 0 && oldRotation >= 0)) {
-        if (Math.abs(velocityRef.current) > 0.8) {
-          const intensity = Math.min(Math.abs(velocityRef.current) / 12, 1);
+        // Increased threshold from 0.8 to 1.5 for slight shakes
+        const absVel = Math.abs(velocityRef.current);
+        if (absVel > 1.5) {
+          // Scale intensity more broadly (1.5 to 20 range)
+          const intensity = Math.min((absVel - 1.5) / 18.5, 1);
           playSound(intensity);
         }
       }
