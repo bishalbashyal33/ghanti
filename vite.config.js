@@ -8,13 +8,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: ['ghanti.svg', 'apple-touch-icon.png', 'og-image.png'],
       manifest: {
-        name: 'Ghanti - Traditional Bell',
+        name: 'Ghanti - Shake to Ring',
         short_name: 'Ghanti',
-        description: 'A traditional temple bell app for meditation and focus.',
-        theme_color: '#0094DA',
-        background_color: '#0094DA',
+        description: 'A digital sanctuary. Shake to ring the bell and find your focus.',
+        theme_color: '#0091d6',
+        background_color: '#0091d6',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
