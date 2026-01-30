@@ -168,23 +168,33 @@ function App() {
     return () => cancelAnimationFrame(frameId);
   }, [playSound]);
 
-  // Motion Permissions
+  // Motion & Shake Detection
   useEffect(() => {
     if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
       setShowMotionBtn(true);
     }
 
     const handleMotion = (e) => {
-      if (!e.accelerationIncludingGravity) return;
-      const acc = e.accelerationIncludingGravity;
+      // Use linear acceleration (excluding gravity) to detect pure shakes.
+      // Rotating the phone slowly will not trigger linear acceleration.
+      const acc = e.acceleration || { x: 0, y: 0, z: 0 };
 
-      // Use a threshold to ignore small jitters and scale input down
-      const threshold = 0.5;
       let x = acc.x;
-      if (Math.abs(x) < threshold) x = 0;
+      if (x === null || (acc.x === 0 && acc.y === 0 && acc.z === 0)) {
+        // Linear acceleration not supported or zero; fallback would go here 
+        // but for pure shaking we want to avoid raw gravity.
+        return;
+      }
 
-      // Significantly reduced multiplier for motion sensitivity
-      velocityRef.current += x * 0.8;
+      // SHAKE DETECTION
+      // Ignore gentle moves (below 3.0 m/s^2). 
+      // Harder shakes trigger faster swings and louder sounds.
+      const shakeThreshold = 3.0;
+      if (Math.abs(x) > shakeThreshold) {
+        // Map shake magnitude to physics impulse.
+        // Multiply x to make "speed" of shake matter.
+        velocityRef.current += x * 1.5;
+      }
     };
 
     window.addEventListener('devicemotion', handleMotion);
