@@ -233,20 +233,6 @@ function App() {
             <input type="range" min="0" max="1.5" step="0.05" value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))} />
           </div>
 
-          <div className="install-section">
-            <label>Install App</label>
-            {deferredPrompt ? (
-              <button className="install-btn" onClick={handleInstallClick}>
-                Install Ghanti
-              </button>
-            ) : (
-              <p className="install-tip">
-                {/iPhone|iPad|iPod/.test(navigator.userAgent)
-                  ? "To install, tap the 'Share' icon and select 'Add to Home Screen'."
-                  : "Go to your browser's menu (⋮) to install Ghanti on your device."}
-              </p>
-            )}
-          </div>
         </div>
       )}
 
