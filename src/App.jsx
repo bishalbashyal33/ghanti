@@ -38,7 +38,7 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
 
   // Settings State
-  const [sensitivity, setSensitivity] = useState(0.0015); // Reduced 10x further from 0.015
+  const [sensitivity, setSensitivity] = useState(0.0248); // Set to requested default
   const [pitch, setPitch] = useState(1.0);
   const [intensity, setIntensity] = useState(1.0);
   const [volume, setVolume] = useState(0.8);
@@ -226,6 +226,7 @@ function App() {
           <BellSVG />
         </div>
       </div>
+      <div className="shake-text">Shake to Ring</div>
     </div>
 
   );
