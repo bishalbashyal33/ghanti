@@ -35,92 +35,69 @@ const BellSVG = () => {
 function App() {
   const [rotation, setRotation] = useState(0);
   const [showMotionBtn, setShowMotionBtn] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Settings State
+  const [sensitivity, setSensitivity] = useState(0.015); // Reduced another 10x from 0.15
+  const [pitch, setPitch] = useState(1.0);
+  const [intensity, setIntensity] = useState(1.0);
+  const [volume, setVolume] = useState(0.8);
+
   const audioCtxRef = useRef(null);
   const audioBufferRef = useRef(null);
-  const reverbRef = useRef(null);
   const velocityRef = useRef(0);
   const rotationRef = useRef(0);
   const lastTimeRef = useRef(performance.now());
   const lastRingTimeRef = useRef(0);
 
-  // Initialize Audio and Load bell.wav
+  // Sync refs to allow physics engine access without re-mounting
+  const settingsRef = useRef({ sensitivity, pitch, intensity, volume });
+  useEffect(() => {
+    settingsRef.current = { sensitivity, pitch, intensity, volume };
+  }, [sensitivity, pitch, intensity, volume]);
+
+  // Initialize Audio
   const initAudio = async () => {
     if (audioCtxRef.current) return;
-
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       const ctx = new AudioContext();
       audioCtxRef.current = ctx;
-
-      // Load specific "bell.wav" for exact sound
       const response = await fetch('/bell.wav');
       const arrayBuffer = await response.arrayBuffer();
       audioBufferRef.current = await ctx.decodeAudioData(arrayBuffer);
-
-      // Reverb fallback (not used if sample plays, but good to have)
-      const duration = 2;
-      const sampleRate = ctx.sampleRate;
-      const length = sampleRate * duration;
-      const impulse = ctx.createBuffer(2, length, sampleRate);
-      for (let i = 0; i < 2; i++) {
-        const channel = impulse.getChannelData(i);
-        for (let j = 0; j < length; j++) {
-          channel[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / length, 4);
-        }
-      }
-      const convolver = ctx.createConvolver();
-      convolver.buffer = impulse;
-      convolver.connect(ctx.destination);
-      reverbRef.current = convolver;
     } catch (err) {
       console.error('Audio initialization failed:', err);
     }
   };
 
-  const playSound = useCallback((intensity) => {
+  const playSound = useCallback((ringIntensity) => {
     const now = performance.now();
-    // Slightly longer debounce to prevent rapid "machine gun" ringing
     if (now - lastRingTimeRef.current < 150) return;
     lastRingTimeRef.current = now;
 
     if (!audioCtxRef.current || audioCtxRef.current.state === 'suspended') return;
     const ctx = audioCtxRef.current;
+    const s = settingsRef.current;
 
     if (audioBufferRef.current) {
       const source = ctx.createBufferSource();
       source.buffer = audioBufferRef.current;
+
+      // Apply user-defined pitch
+      source.playbackRate.setValueAtTime(s.pitch, ctx.currentTime);
+
       const gain = ctx.createGain();
-
-      // Much more dynamic gain range: 0.02 to 1.0
-      // Uses a square of intensity for a more natural response to soft/hard shakes
-      const volume = Math.min(0.02 + (intensity * intensity * 0.98), 1);
-
-      gain.gain.setValueAtTime(volume, ctx.currentTime);
-      // Subtle fade out to prevent clicks
+      // Apply user volume and intensity curve
+      const vol = Math.min(0.02 + (ringIntensity * s.intensity * 0.98), 1) * s.volume;
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5);
 
       source.connect(gain);
       gain.connect(ctx.destination);
       source.start(0);
-    } else if (reverbRef.current) {
-      // Fallback
-      const startTime = ctx.currentTime;
-      const harmonics = [520, 780, 1040, 1300, 1664, 2132];
-      const amplitudes = [1.0, 0.6, 0.4, 0.3, 0.2, 0.1];
-
-      harmonics.forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const g = ctx.createGain();
-        osc.frequency.setValueAtTime(freq, startTime);
-        g.gain.setValueAtTime(amplitudes[i] * intensity, startTime);
-        g.gain.exponentialRampToValueAtTime(0.001, startTime + 2);
-        osc.connect(g);
-        g.connect(reverbRef.current);
-        osc.start(startTime);
-      });
     }
   }, []);
-
 
   // Physics Loop
   useEffect(() => {
@@ -143,20 +120,16 @@ function App() {
       const oldRotation = rotationRef.current;
       rotationRef.current += velocityRef.current * dt;
 
-      // Clamp rotation
       if (Math.abs(rotationRef.current) > maxRotation) {
         rotationRef.current = Math.sign(rotationRef.current) * maxRotation;
         velocityRef.current *= -0.5;
       }
 
-      // Sound Trigger (Center cross)
       if ((rotationRef.current > 0 && oldRotation <= 0) || (rotationRef.current < 0 && oldRotation >= 0)) {
-        // Increased threshold from 0.8 to 1.5 for slight shakes
         const absVel = Math.abs(velocityRef.current);
         if (absVel > 1.5) {
-          // Scale intensity more broadly (1.5 to 20 range)
-          const intensity = Math.min((absVel - 1.5) / 18.5, 1);
-          playSound(intensity);
+          const ringIntensity = Math.min((absVel - 1.5) / 18.5, 1);
+          playSound(ringIntensity);
         }
       }
 
@@ -168,32 +141,22 @@ function App() {
     return () => cancelAnimationFrame(frameId);
   }, [playSound]);
 
-  // Motion & Shake Detection
+  // Motion Detection
   useEffect(() => {
     if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
       setShowMotionBtn(true);
     }
 
     const handleMotion = (e) => {
-      // Use linear acceleration (excluding gravity) to detect pure shakes.
-      // Rotating the phone slowly will not trigger linear acceleration.
       const acc = e.acceleration || { x: 0, y: 0, z: 0 };
+      const s = settingsRef.current;
+      const x = acc.x;
+      if (x === null || (acc.x === 0 && acc.y === 0 && acc.z === 0)) return;
 
-      let x = acc.x;
-      if (x === null || (acc.x === 0 && acc.y === 0 && acc.z === 0)) {
-        // Linear acceleration not supported or zero; fallback would go here 
-        // but for pure shaking we want to avoid raw gravity.
-        return;
-      }
-
-      // SHAKE DETECTION
-      // Ignore gentle moves (below 3.0 m/s^2). 
-      // Harder shakes trigger faster swings and louder sounds.
       const shakeThreshold = 3.0;
       if (Math.abs(x) > shakeThreshold) {
-        // Map shake magnitude to physics impulse.
-        // Multiply x to make "speed" of shake matter.
-        velocityRef.current += x * 1.5;
+        // Reduced sensitivity by 10x as per user request
+        velocityRef.current += x * s.sensitivity;
       }
     };
 
@@ -201,15 +164,12 @@ function App() {
     return () => window.removeEventListener('devicemotion', handleMotion);
   }, []);
 
-  useEffect(() => {
-    const handleWindowClick = () => {
-      initAudio();
-      // Reduced click impulse from 40 to 15
-      velocityRef.current += (Math.random() - 0.5) * 15;
-    };
-    window.addEventListener('click', handleWindowClick);
-    return () => window.removeEventListener('click', handleWindowClick);
-  }, []);
+  const handleBellClick = (e) => {
+    e.stopPropagation();
+    initAudio();
+    // Impulse for click
+    velocityRef.current += (Math.random() - 0.5) * 15;
+  };
 
   const requestMotion = () => {
     DeviceMotionEvent.requestPermission()
@@ -224,18 +184,48 @@ function App() {
 
   return (
     <div className="container">
+      <button
+        className="settings-toggle"
+        onClick={(e) => { e.stopPropagation(); setShowSettings(!showSettings); }}
+        aria-label="Settings"
+      >
+        <svg viewBox="0 0 24 24" width="24" height="24">
+          <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.84,9.48l2.03,1.58C4.84,11.36,4.81,11.69,4.81,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
+        </svg>
+      </button>
+
+      {showSettings && (
+        <div className="settings-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="setting-item">
+            <label>Sensitivity ({sensitivity.toFixed(3)})</label>
+            <input type="range" min="0.001" max="0.5" step="0.001" value={sensitivity} onChange={(e) => setSensitivity(parseFloat(e.target.value))} />
+          </div>
+          <div className="setting-item">
+            <label>Pitch ({pitch.toFixed(1)})</label>
+            <input type="range" min="0.5" max="2.0" step="0.1" value={pitch} onChange={(e) => setPitch(parseFloat(e.target.value))} />
+          </div>
+          <div className="setting-item">
+            <label>Intensity ({intensity.toFixed(1)})</label>
+            <input type="range" min="0.1" max="2.0" step="0.1" value={intensity} onChange={(e) => setIntensity(parseFloat(e.target.value))} />
+          </div>
+          <div className="setting-item">
+            <label>Volume ({(volume * 100).toFixed(0)}%)</label>
+            <input type="range" min="0" max="1.5" step="0.05" value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))} />
+          </div>
+        </div>
+      )}
+
       {showMotionBtn && (
-        <button className="motion-btn" onClick={(e) => { e.stopPropagation(); requestMotion(); }}>
+        <button className="motion-btn" style={{ top: '80px' }} onClick={(e) => { e.stopPropagation(); requestMotion(); }}>
           Enable Motion
         </button>
       )}
 
       <div className="circle">
-        <div className="bell" style={{ transform: `rotate(${rotation}deg)` }}>
+        <div className="bell" onClick={handleBellClick} style={{ transform: `rotate(${rotation}deg)` }}>
           <BellSVG />
         </div>
       </div>
-
     </div>
   );
 }
