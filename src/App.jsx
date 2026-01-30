@@ -38,7 +38,7 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
 
   // Settings State
-  const [sensitivity, setSensitivity] = useState(0.015); // Reduced another 10x from 0.15
+  const [sensitivity, setSensitivity] = useState(0.0015); // Reduced 10x further from 0.015
   const [pitch, setPitch] = useState(1.0);
   const [intensity, setIntensity] = useState(1.0);
   const [volume, setVolume] = useState(0.8);
@@ -155,7 +155,7 @@ function App() {
 
       const shakeThreshold = 3.0;
       if (Math.abs(x) > shakeThreshold) {
-        // Reduced sensitivity by 10x as per user request
+        // Sensitivity is now 0.0015 by default
         velocityRef.current += x * s.sensitivity;
       }
     };
@@ -189,16 +189,17 @@ function App() {
         onClick={(e) => { e.stopPropagation(); setShowSettings(!showSettings); }}
         aria-label="Settings"
       >
-        <svg viewBox="0 0 24 24" width="24" height="24">
-          <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.84,9.48l2.03,1.58C4.84,11.36,4.81,11.69,4.81,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
         </svg>
       </button>
 
       {showSettings && (
         <div className="settings-panel" onClick={(e) => e.stopPropagation()}>
           <div className="setting-item">
-            <label>Sensitivity ({sensitivity.toFixed(3)})</label>
-            <input type="range" min="0.001" max="0.5" step="0.001" value={sensitivity} onChange={(e) => setSensitivity(parseFloat(e.target.value))} />
+            <label>Sensitivity ({sensitivity.toFixed(4)})</label>
+            <input type="range" min="0.0001" max="0.1" step="0.0001" value={sensitivity} onChange={(e) => setSensitivity(parseFloat(e.target.value))} />
           </div>
           <div className="setting-item">
             <label>Pitch ({pitch.toFixed(1)})</label>
@@ -216,7 +217,7 @@ function App() {
       )}
 
       {showMotionBtn && (
-        <button className="motion-btn" style={{ top: '80px' }} onClick={(e) => { e.stopPropagation(); requestMotion(); }}>
+        <button className="motion-btn" style={{ top: '20px', right: '20px' }} onClick={(e) => { e.stopPropagation(); requestMotion(); }}>
           Enable Motion
         </button>
       )}
@@ -227,6 +228,7 @@ function App() {
         </div>
       </div>
     </div>
+
   );
 }
 

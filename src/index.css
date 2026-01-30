@@ -1,5 +1,5 @@
 :root {
-  --blue: #0094DA;
+  --blue: #0091d6;
 }
 
 * {
@@ -12,8 +12,8 @@ body {
   height: 100vh;
   width: 100vw;
   background-color: var(--blue);
-  background: radial-gradient(circle at 10% 10%, #00A6F3 0%, var(--blue) 50%),
-    radial-gradient(circle at 90% 90%, #0084C1 0%, var(--blue) 50%);
+  background: radial-gradient(circle at 10% 10%, #00a8f7 0%, var(--blue) 50%),
+    radial-gradient(circle at 90% 90%, #007bb6 0%, var(--blue) 50%);
   display: flex;
   justify-content: center;
   align-items: center;
