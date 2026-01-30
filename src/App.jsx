@@ -42,6 +42,7 @@ function App() {
   const [pitch, setPitch] = useState(1.0);
   const [intensity, setIntensity] = useState(1.0);
   const [volume, setVolume] = useState(0.8);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   const audioCtxRef = useRef(null);
   const audioBufferRef = useRef(null);
@@ -55,6 +56,25 @@ function App() {
   useEffect(() => {
     settingsRef.current = { sensitivity, pitch, intensity, volume };
   }, [sensitivity, pitch, intensity, volume]);
+
+  // Handle PWA Install Prompt
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   // Initialize Audio
   const initAudio = async () => {
@@ -215,11 +235,17 @@ function App() {
 
           <div className="install-section">
             <label>Install App</label>
-            <p className="install-tip">
-              {/iPhone|iPad|iPod/.test(navigator.userAgent)
-                ? "Tap the 'Share' icon and select 'Add to Home Screen' to install Ghanti."
-                : "Install Ghanti on your home screen for the best experience."}
-            </p>
+            {deferredPrompt ? (
+              <button className="install-btn" onClick={handleInstallClick}>
+                Install Ghanti
+              </button>
+            ) : (
+              <p className="install-tip">
+                {/iPhone|iPad|iPod/.test(navigator.userAgent)
+                  ? "To install, tap the 'Share' icon and select 'Add to Home Screen'."
+                  : "Go to your browser's menu (⋮) to install Ghanti on your device."}
+              </p>
+            )}
           </div>
         </div>
       )}

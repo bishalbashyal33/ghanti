@@ -103,3 +103,20 @@
   line-height: 1.4;
   margin-top: 5px;
 }
+
+.install-btn {
+  width: 100%;
+  padding: 10px;
+  background-color: var(--blue);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: opacity 0.2s;
+}
+
+.install-btn:hover {
+  opacity: 0.9;
+}

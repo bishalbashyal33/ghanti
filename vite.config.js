@@ -13,7 +13,7 @@ export default defineConfig({
       manifest: {
         name: 'Ghanti - Shake to Ring',
         short_name: 'Ghanti',
-        description: 'A digital sanctuary. Shake to ring the bell and find your focus.',
+        description: 'Aba Bajcha Ghanti. Shake to ring the bell on your phone.',
         theme_color: '#0091d6',
         background_color: '#0091d6',
         display: 'standalone',
