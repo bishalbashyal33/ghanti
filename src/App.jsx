@@ -116,28 +116,34 @@ function App() {
   // Physics Loop
   useEffect(() => {
     let frameId;
-    const gravity = 0.5;
-    const friction = 0.985;
-    lastTimeRef.current = performance.now(); // Reset on mount
+    const gravity = 0.15; // Lowered from 0.5 for a "heavier", slower swing
+    const friction = 0.992; // Increased from 0.985 for better damping
+    const maxRotation = 60; // Prevent the bell from swinging too wildly
+    lastTimeRef.current = performance.now();
 
     const update = () => {
       const currentTime = performance.now();
-      // Clamp dt to prevent "explosions" if tab was inactive
       let dt = (currentTime - lastTimeRef.current) / 16.66;
       if (dt > 2) dt = 2;
       lastTimeRef.current = currentTime;
 
       const springForce = -gravity * rotationRef.current;
       velocityRef.current += springForce * dt;
-      velocityRef.current *= friction;
+      velocityRef.current *= Math.pow(friction, dt); // Scale friction with time
 
       const oldRotation = rotationRef.current;
       rotationRef.current += velocityRef.current * dt;
 
-      // Sound Trigger
+      // Clamp rotation
+      if (Math.abs(rotationRef.current) > maxRotation) {
+        rotationRef.current = Math.sign(rotationRef.current) * maxRotation;
+        velocityRef.current *= -0.5; // Slight bounce back
+      }
+
+      // Sound Trigger (only if moving fast enough)
       if ((rotationRef.current > 0 && oldRotation <= 0) || (rotationRef.current < 0 && oldRotation >= 0)) {
-        if (Math.abs(velocityRef.current) > 0.5) {
-          const intensity = Math.min(Math.abs(velocityRef.current) / 15, 1);
+        if (Math.abs(velocityRef.current) > 0.8) {
+          const intensity = Math.min(Math.abs(velocityRef.current) / 12, 1);
           playSound(intensity);
         }
       }
@@ -159,10 +165,14 @@ function App() {
     const handleMotion = (e) => {
       if (!e.accelerationIncludingGravity) return;
       const acc = e.accelerationIncludingGravity;
-      const totalAcc = Math.abs(acc.x) + Math.abs(acc.y);
-      if (totalAcc > 15) {
-        velocityRef.current += acc.x * 3;
-      }
+
+      // Use a threshold to ignore small jitters and scale input down
+      const threshold = 0.5;
+      let x = acc.x;
+      if (Math.abs(x) < threshold) x = 0;
+
+      // Significantly reduced multiplier for motion sensitivity
+      velocityRef.current += x * 0.8;
     };
 
     window.addEventListener('devicemotion', handleMotion);
@@ -172,7 +182,8 @@ function App() {
   useEffect(() => {
     const handleWindowClick = () => {
       initAudio();
-      velocityRef.current += (Math.random() - 0.5) * 40;
+      // Reduced click impulse from 40 to 15
+      velocityRef.current += (Math.random() - 0.5) * 15;
     };
     window.addEventListener('click', handleWindowClick);
     return () => window.removeEventListener('click', handleWindowClick);
