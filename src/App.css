@@ -79,3 +79,14 @@
   cursor: pointer;
   accent-color: #0091d6;
 }
+
+.shake-text {
+  position: absolute;
+  top: calc(50% + min(40vw, 40vh, 200px) + 60px);
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 500;
+  opacity: 0.9;
+}
