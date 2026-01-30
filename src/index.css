@@ -1,0 +1,101 @@
+:root {
+  --blue: #0094DA;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--blue);
+  background: radial-gradient(circle at 10% 10%, #00A6F3 0%, var(--blue) 50%),
+    radial-gradient(circle at 90% 90%, #0084C1 0%, var(--blue) 50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  font-family: 'Crimson Text', serif;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.circle {
+  width: min(80vw, 80vh, 400px);
+  height: min(80vw, 80vh, 400px);
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.bell {
+  width: 100%;
+  height: 90%;
+  color: var(--blue);
+  transform-origin: 50% 0%;
+  cursor: pointer;
+  will-change: transform;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  position: absolute;
+  top: 0;
+}
+
+.ripple {
+  position: absolute;
+  border: 4px solid var(--blue);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  animation: ripple 1s cubic-bezier(0.1, 0.2, 0.3, 1) forwards;
+}
+
+.motion-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid white;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.3s;
+  z-index: 100;
+}
+
+.motion-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+@keyframes ripple {
+  0% {
+    width: min(80vw, 80vh, 400px);
+    height: min(80vw, 80vh, 400px);
+    opacity: 0.6;
+  }
+
+  100% {
+    width: 600px;
+    height: 600px;
+    opacity: 0;
+  }
+}
