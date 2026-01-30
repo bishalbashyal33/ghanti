@@ -212,6 +212,15 @@ function App() {
             <label>Volume ({(volume * 100).toFixed(0)}%)</label>
             <input type="range" min="0" max="1.5" step="0.05" value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))} />
           </div>
+
+          <div className="install-section">
+            <label>Install App</label>
+            <p className="install-tip">
+              {/iPhone|iPad|iPod/.test(navigator.userAgent)
+                ? "Tap the 'Share' icon and select 'Add to Home Screen' to install Ghanti."
+                : "Install Ghanti on your home screen for the best experience."}
+            </p>
+          </div>
         </div>
       )}
 

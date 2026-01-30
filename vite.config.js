@@ -8,6 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'auto',
       includeAssets: ['ghanti.svg', 'apple-touch-icon.png', 'og-image.png'],
       manifest: {
         name: 'Ghanti - Shake to Ring',
@@ -17,6 +18,8 @@ export default defineConfig({
         background_color: '#0091d6',
         display: 'standalone',
         orientation: 'portrait',
+        scope: '/',
+        start_url: '/',
         icons: [
           {
             src: 'pwa-192x192.png',
