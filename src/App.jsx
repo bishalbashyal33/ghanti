@@ -51,6 +51,7 @@ function App() {
   const rotationRef = useRef(0);
   const lastTimeRef = useRef(performance.now());
   const lastRingTimeRef = useRef(0);
+  const isInitializingRef = useRef(false);
 
   // Sync refs to allow physics engine access without re-mounting
   const settingsRef = useRef({ sensitivity, pitch, intensity, volume });
@@ -79,8 +80,10 @@ function App() {
 
   // Initialize Audio
   const initAudio = async () => {
+    if (isInitializingRef.current) return;
     try {
       if (!audioCtxRef.current) {
+        isInitializingRef.current = true;
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const ctx = new AudioContext();
         audioCtxRef.current = ctx;
@@ -89,11 +92,13 @@ function App() {
         audioBufferRef.current = await ctx.decodeAudioData(arrayBuffer);
       }
 
-      if (audioCtxRef.current.state === 'suspended') {
+      if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
         await audioCtxRef.current.resume();
       }
     } catch (err) {
       console.error('Audio initialization failed:', err);
+    } finally {
+      isInitializingRef.current = false;
     }
   };
 
@@ -181,7 +186,7 @@ function App() {
 
       const shakeThreshold = 3.0;
       if (Math.abs(x) > shakeThreshold) {
-        // Sensitivity is now 0.0015 by default
+        // Apply impulse based on acceleration and sensitivity settings
         velocityRef.current += x * s.sensitivity;
       }
     };
