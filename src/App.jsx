@@ -6,6 +6,7 @@ const BellSVG = () => {
 
   return (
     <svg viewBox="0 0 100 230" fill="currentColor" className="bell-svg" preserveAspectRatio="xMidYMin meet">
+      <title>Virtual Ghanti - Digital Puja Bell</title>
       {/* Repeated chain links to cover the rope area */}
       {[0, 31.1, 65.4].map((y) => (
         <g key={y} transform={`translate(50, ${y})`}>
@@ -78,14 +79,19 @@ function App() {
 
   // Initialize Audio
   const initAudio = async () => {
-    if (audioCtxRef.current) return;
     try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      const ctx = new AudioContext();
-      audioCtxRef.current = ctx;
-      const response = await fetch('/bell.wav');
-      const arrayBuffer = await response.arrayBuffer();
-      audioBufferRef.current = await ctx.decodeAudioData(arrayBuffer);
+      if (!audioCtxRef.current) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioContext();
+        audioCtxRef.current = ctx;
+        const response = await fetch('/bell.wav');
+        const arrayBuffer = await response.arrayBuffer();
+        audioBufferRef.current = await ctx.decodeAudioData(arrayBuffer);
+      }
+
+      if (audioCtxRef.current.state === 'suspended') {
+        await audioCtxRef.current.resume();
+      }
     } catch (err) {
       console.error('Audio initialization failed:', err);
     }
@@ -184,9 +190,22 @@ function App() {
     return () => window.removeEventListener('devicemotion', handleMotion);
   }, []);
 
-  const handleBellClick = (e) => {
+  // Global Audio Unlocker
+  useEffect(() => {
+    const unlock = () => {
+      initAudio();
+    };
+    window.addEventListener('click', unlock, { once: true });
+    window.addEventListener('touchstart', unlock, { once: true });
+    return () => {
+      window.removeEventListener('click', unlock);
+      window.removeEventListener('touchstart', unlock);
+    };
+  }, []);
+
+  const handleBellClick = async (e) => {
     e.stopPropagation();
-    initAudio();
+    await initAudio();
     // Impulse for click
     velocityRef.current += (Math.random() - 0.5) * 15;
   };
@@ -203,7 +222,7 @@ function App() {
   };
 
   return (
-    <div className="container">
+    <div className="container" onClick={initAudio}>
       <button
         className="settings-toggle"
         onClick={(e) => { e.stopPropagation(); setShowSettings(!showSettings); }}
@@ -242,13 +261,23 @@ function App() {
         </button>
       )}
 
+      {/* Visually hidden H1 for SEO */}
+      <h1 style={{ position: 'absolute', width: '1px', height: '1px', padding: '0', margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', border: '0' }}>
+        Virtual Ghanti - Digital Puja Bell by Bishal Bashyal (Bishalb)
+      </h1>
+
       <div className="circle">
         <div className="bell" onClick={handleBellClick} style={{ transform: `rotate(${rotation}deg)` }}>
           <BellSVG />
         </div>
       </div>
       <div className="shake-text">Shake to Ring</div>
+
+      <footer className="footer-seo">
+        <p>Virtual Ghanti & Digital Bell by <a href="https://bishalb.com" target="_blank" rel="noopener noreferrer">Bishal Bashyal</a></p>
+      </footer>
     </div>
+
 
   );
 }

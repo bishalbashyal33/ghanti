@@ -120,3 +120,26 @@
 .install-btn:hover {
   opacity: 0.9;
 }
+
+.footer-seo {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.75rem;
+  text-align: center;
+  width: 100%;
+  pointer-events: none;
+}
+
+.footer-seo a {
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: none;
+  pointer-events: auto;
+  font-weight: 500;
+}
+
+.footer-seo a:hover {
+  color: white;
+}

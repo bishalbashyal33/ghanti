@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://ghanti.bishalb.com/sitemap.xml

@@ -9,11 +9,11 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      includeAssets: ['ghanti.svg', 'apple-touch-icon.png', 'og-image.png'],
+      includeAssets: ['bell.wav', 'ghanti.svg', 'apple-touch-icon.png', 'og-image.png'],
       manifest: {
-        name: 'Ghanti - Shake to Ring',
+        name: 'Ghanti - Virtual Ghanti & Digital Bell',
         short_name: 'Ghanti',
-        description: 'Experience the digital Ghanti. Shake your phone to ring the bell with realistic sounds and physics.',
+        description: 'Realistic virtual ghanti for daily rituals. Shake your phone to ring the digital bell with immersive sounds and physics.',
         theme_color: '#0091d6',
         background_color: '#0091d6',
         display: 'standalone',
