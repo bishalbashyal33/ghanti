@@ -312,7 +312,7 @@ function App() {
 
       {/* Visually hidden H1 for SEO */}
       <h1 style={{ position: 'absolute', width: '1px', height: '1px', padding: '0', margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', border: '0' }}>
-        Virtual Ghanti - Digital Puja Bell by Bishal Bashyal (Bishalb)
+        Virtual Ghanti - Digital Puja Bell
       </h1>
 
       <div className="circle">
@@ -322,9 +322,7 @@ function App() {
       </div>
       <div className="shake-text">Shake to Ring</div>
 
-      <footer className="footer-seo">
-        <p>Virtual Ghanti & Digital Bell by <a href="https://bishalb.com" target="_blank" rel="noopener noreferrer">Bishal Bashyal</a></p>
-      </footer>
+
     </div>
 
 
