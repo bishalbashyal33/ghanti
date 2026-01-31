@@ -53,7 +53,7 @@ function App() {
   const rotationRef = useRef(0);
   const lastTimeRef = useRef(performance.now());
   const lastRingTimeRef = useRef(0);
-  const isInitializingRef = useRef(false);
+  const audioLoadingPromiseRef = useRef(null);
 
   // Sync refs to allow physics engine access without re-mounting
   const settingsRef = useRef({ sensitivity, pitch, intensity, volume });
@@ -94,26 +94,41 @@ function App() {
 
   // Initialize Audio
   const initAudio = async () => {
-    if (isInitializingRef.current) return;
-    try {
-      if (!audioCtxRef.current) {
-        isInitializingRef.current = true;
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const ctx = new AudioContext();
-        audioCtxRef.current = ctx;
-        const response = await fetch('/bell.wav');
-        const arrayBuffer = await response.arrayBuffer();
-        audioBufferRef.current = await ctx.decodeAudioData(arrayBuffer);
-      }
-
-      if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
-        await audioCtxRef.current.resume();
-      }
-    } catch (err) {
-      console.error('Audio initialization failed:', err);
-    } finally {
-      isInitializingRef.current = false;
+    // If already loading, wait for that same promise
+    if (audioLoadingPromiseRef.current) {
+      return audioLoadingPromiseRef.current;
     }
+
+    const load = async () => {
+      try {
+        if (!audioCtxRef.current) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          const ctx = new AudioContext();
+          audioCtxRef.current = ctx;
+
+          const response = await fetch('/bell.wav');
+          const arrayBuffer = await response.arrayBuffer();
+          audioBufferRef.current = await ctx.decodeAudioData(arrayBuffer);
+
+          // Play a silent buffer immediately to "warm up" the context
+          const silentSource = ctx.createBufferSource();
+          const silentBuffer = ctx.createBuffer(1, 1, 22050);
+          silentSource.buffer = silentBuffer;
+          silentSource.connect(ctx.destination);
+          silentSource.start(0);
+        }
+
+        if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+          await audioCtxRef.current.resume();
+        }
+      } catch (err) {
+        console.error('Audio initialization failed:', err);
+        audioLoadingPromiseRef.current = null;
+      }
+    };
+
+    audioLoadingPromiseRef.current = load();
+    return audioLoadingPromiseRef.current;
   };
 
   const playSound = useCallback((ringIntensity) => {
