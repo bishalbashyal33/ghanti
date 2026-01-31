@@ -37,6 +37,8 @@ function App() {
   const [rotation, setRotation] = useState(0);
   const [showMotionBtn, setShowMotionBtn] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isInAppBrowser, setIsInAppBrowser] = useState(false);
 
   // Settings State
   const [sensitivity, setSensitivity] = useState(0.0248); // Set to requested default
@@ -58,6 +60,18 @@ function App() {
   useEffect(() => {
     settingsRef.current = { sensitivity, pitch, intensity, volume };
   }, [sensitivity, pitch, intensity, volume]);
+
+  // Detect In-App Browsers (like Messenger/Instagram)
+  useEffect(() => {
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+    const isFB = ua.indexOf('FBAN') > -1 || ua.indexOf('FBAV') > -1;
+    const isMessenger = ua.indexOf('Messenger') > -1;
+    const isInstagram = ua.indexOf('Instagram') > -1;
+
+    if (isFB || isMessenger || isInstagram) {
+      setIsInAppBrowser(true);
+    }
+  }, []);
 
   // Handle PWA Install Prompt
   useEffect(() => {
@@ -127,6 +141,13 @@ function App() {
       source.connect(gain);
       gain.connect(ctx.destination);
       source.start(0);
+
+      // Add haptic feedback (vibration) for Android
+      if ('vibrate' in navigator) {
+        // Vibrate for a duration proportional to intensity (10ms to 60ms)
+        const duration = Math.max(10, ringIntensity * 50);
+        navigator.vibrate(duration);
+      }
     }
   }, []);
 
@@ -227,7 +248,22 @@ function App() {
   };
 
   return (
-    <div className="container" onClick={initAudio}>
+    <div className="container" onClick={() => { if (!isUnlocked) { setIsUnlocked(true); initAudio(); } }}>
+      {isInAppBrowser && !isUnlocked && (
+        <div className="unlock-overlay" onClick={(e) => { e.stopPropagation(); setIsUnlocked(true); initAudio(); }}>
+          <div className="unlock-content">
+            <div className="unlock-icon">🔔</div>
+            <h2>Welcome to Virtual Ghanti</h2>
+            <button className="start-btn">Tap to Start</button>
+            <p className="browser-warning">
+              You are playing inside an app. For the best "Shake to Ring" experience,
+              tap the <strong>three dots</strong> or <strong>arrow</strong> icon and select
+              <strong> "Open in Chrome"</strong> or <strong>"Open in Browser"</strong>.
+            </p>
+          </div>
+        </div>
+      )}
+
       <button
         className="settings-toggle"
         onClick={(e) => { e.stopPropagation(); setShowSettings(!showSettings); }}
