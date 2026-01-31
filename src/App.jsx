@@ -94,35 +94,28 @@ function App() {
 
   // Initialize Audio
   const initAudio = async () => {
-    // If already loading, wait for that same promise
-    if (audioLoadingPromiseRef.current) {
-      return audioLoadingPromiseRef.current;
+    // 1. Create and resume the context IMMEDIATELY.
+    // This MUST happen before any 'await' to stay within the user gesture context.
+    if (!audioCtxRef.current) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioCtxRef.current = new AudioContext();
     }
+
+    if (audioCtxRef.current.state === 'suspended') {
+      await audioCtxRef.current.resume();
+    }
+
+    // 2. Handle data loading separately
+    if (audioBufferRef.current) return;
+    if (audioLoadingPromiseRef.current) return audioLoadingPromiseRef.current;
 
     const load = async () => {
       try {
-        if (!audioCtxRef.current) {
-          const AudioContext = window.AudioContext || window.webkitAudioContext;
-          const ctx = new AudioContext();
-          audioCtxRef.current = ctx;
-
-          const response = await fetch('/bell.wav');
-          const arrayBuffer = await response.arrayBuffer();
-          audioBufferRef.current = await ctx.decodeAudioData(arrayBuffer);
-
-          // Play a silent buffer immediately to "warm up" the context
-          const silentSource = ctx.createBufferSource();
-          const silentBuffer = ctx.createBuffer(1, 1, 22050);
-          silentSource.buffer = silentBuffer;
-          silentSource.connect(ctx.destination);
-          silentSource.start(0);
-        }
-
-        if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
-          await audioCtxRef.current.resume();
-        }
+        const response = await fetch('/bell.wav');
+        const arrayBuffer = await response.arrayBuffer();
+        audioBufferRef.current = await audioCtxRef.current.decodeAudioData(arrayBuffer);
       } catch (err) {
-        console.error('Audio initialization failed:', err);
+        console.error('Audio loading failed:', err);
         audioLoadingPromiseRef.current = null;
       }
     };
